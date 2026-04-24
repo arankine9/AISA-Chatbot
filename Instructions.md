@@ -26,16 +26,16 @@ Why this stack: it does lots of the work for you
 
 - GitHub account and a fresh repo (you've done this part)
 - VS Code (you've done this part)
-- A Google AI Studio API key (the Gemini key you just created)
-- A Vercel account
+- A Google AI Studio API key (you've done this part)
+- A Vercel account (as easy as the other ones. ask your favorite AI how to connect your github repo that you already made to this. it should be like 3 buttons)
 
-### Two paths from here
+### Now you have 2 options
 
-**Path A (recommended for the workshop): deploy-to-test.** Skip installing Node entirely. Scaffold your app in the cloud and let Vercel auto-deploy every time you push. You'll iterate by editing code, pushing to GitHub, and hitting your Vercel preview URL. Slower feedback loop but zero local setup.
+**A : deploy-to-test.** This is the easiest since you dont have to install Node.js but will be more annoying to test. Skip installing Node entirely. Scaffold your app and let Vercel auto-deploy every time you push. You'll iterate by editing code, pushing to GitHub, and hitting your Vercel preview URL. Slower feedback loop but zero local setup.
 
-**Path B: local dev.** Install Node.js 20 or newer from nodejs.org, then you can run everything on your machine with hot reload. Better long term but not required today.
+**B: local dev.** Install Node.js 20 or newer from nodejs.org, then you can run everything on your machine with hot reload. Better long term but not required today.
 
-Pick one and stick with it. The rest of this guide works for both, with notes where the steps differ.
+Pick one the rest of this guide works for both, with notes where the steps differ.
 
 ## Environment variables
 
@@ -51,6 +51,8 @@ Get the Postgres URL by creating a Postgres database in your Vercel dashboard (S
 If you're on Path A, you'll also need to add these same variables to your Vercel project under Settings → Environment Variables. That's what the deployed app actually reads.
 
 ## Database setup
+
+This part is probably the most confusing, but pretty much all AI tools will know how to do this.
 
 Run this once against your Postgres database (you can do it from the Vercel query editor or any Postgres client):
 
@@ -131,3 +133,4 @@ Do these in order
 7. Ingest real documents (a few wikipedia articles, a PDF, anything)
 8. Ask questions and test functionality
 9. Deploy to Vercel (Path B only, Path A is already deployed)
+10. Make it look cool and send the link
