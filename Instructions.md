@@ -29,7 +29,13 @@ Why this stack: it does lots of the work for you
 - A Google AI Studio API key (the Gemini key you just created)
 - A Vercel account
 
-- Note: Node.js 20 or newer will let you develop this locally, but for this you can just deploy to Vercel and check what the deployment looks like. Not good long term but fine for this.
+### Two paths from here
+
+**Path A (recommended for the workshop): deploy-to-test.** Skip installing Node entirely. Scaffold your app in the cloud and let Vercel auto-deploy every time you push. You'll iterate by editing code, pushing to GitHub, and hitting your Vercel preview URL. Slower feedback loop but zero local setup.
+
+**Path B: local dev.** Install Node.js 20 or newer from nodejs.org, then you can run everything on your machine with hot reload. Better long term but not required today.
+
+Pick one and stick with it. The rest of this guide works for both, with notes where the steps differ.
 
 ## Environment variables
 
@@ -41,6 +47,8 @@ POSTGRES_URL=your_vercel_postgres_connection_string
 ```
 
 Get the Postgres URL by creating a Postgres database in your Vercel dashboard (Storage tab) and linking it to your project. Vercel will give you the connection string.
+
+If you're on Path A, you'll also need to add these same variables to your Vercel project under Settings → Environment Variables. That's what the deployed app actually reads.
 
 ## Database setup
 
@@ -87,6 +95,8 @@ lib/
 npm install ai @ai-sdk/google @vercel/postgres zod
 ```
 
+On Path A you won't run this locally. Instead, edit `package.json` to add these to `dependencies` and Vercel will install them on the next deploy. Or use github.dev (press `.` on your repo page) which gives you a browser-based terminal where `npm install` works.
+
 ## How each piece works
 
 **Ingestion endpoint (`/api/ingest`)** takes text (and optional metadata), chunks it if it's long, embeds each chunk with `text-embedding-004`, and inserts rows into `documents`. For the workshop a 500 to 1000 character chunk size with some overlap is fine.
@@ -112,12 +122,12 @@ The `<=>` operator is cosine distance. Smaller means more similar.
 
 Do these in order
 
-1. Scaffold a Next.js app (`npx create-next-app@latest`), install the packages above
-2. Hook up Postgres, run the schema, confirm you can connect from a route handler
+1. Scaffold a Next.js app. Path B: run `npx create-next-app@latest` locally. Path A: use a Next.js template from the Vercel dashboard (New Project → Browse Templates → Next.js), or open your repo in github.dev and run the same command there. Either way, install the packages listed above.
+2. Hook up Postgres and run the schema against your database. Path B: verify the connection by hitting a route handler on localhost. Path A: push your code, wait for the deploy, and hit the route on your Vercel URL.
 3. Build the ingestion endpoint, test it by posting some text to it
 4. Verify rows are landing in `documents` with non-null embeddings
 5. Build the chat endpoint with RAG and streaming
 6. Build the chat UI with `useChat`
 7. Ingest real documents (a few wikipedia articles, a PDF, anything)
 8. Ask questions and test functionality
-9. Deploy to Vercel
+9. Deploy to Vercel (Path B only, Path A is already deployed)
