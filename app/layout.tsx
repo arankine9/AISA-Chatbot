@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AISA Chatbot",
-  description: "RAG chatbot powered by Gemini, pgvector, and the Vercel AI SDK.",
+  title: "Tech Collective of Oregon",
+  description: "AI assistant for the Tech Collective of Oregon.",
 };
 
 export default function RootLayout({

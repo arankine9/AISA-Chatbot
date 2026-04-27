@@ -15,18 +15,26 @@ export default function Page() {
   return (
     <main className="mx-auto flex h-dvh max-w-3xl flex-col px-4">
       <header className="flex items-center justify-between py-5">
-        <div className="flex items-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px] shadow-emerald-400/60" />
-          <h1 className="text-sm font-medium tracking-wide text-zinc-200">
-            AISA Chatbot
-          </h1>
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/TCO.svg"
+            alt="Tech Collective of Oregon"
+            className="h-7 w-auto text-zinc-900"
+          />
+          <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px] shadow-emerald-500/50" />
+            <h1 className="text-sm font-medium tracking-wide text-zinc-700">
+              Tech Collective of Oregon
+            </h1>
+          </div>
         </div>
-        <span className="text-xs text-zinc-500">Gemini · pgvector · RAG</span>
+        <span className="hidden text-xs text-zinc-500 sm:inline">AI Assistant</span>
       </header>
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 shadow-inner"
+        className="flex-1 overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
       >
         {messages.length === 0 ? (
           <EmptyState />
@@ -37,15 +45,15 @@ export default function Page() {
                 key={m.id}
                 className={
                   m.role === "user"
-                    ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 shadow"
-                    : "mr-auto max-w-[85%] rounded-2xl rounded-bl-sm bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 ring-1 ring-zinc-800"
+                    ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-zinc-900 px-4 py-2.5 text-sm text-zinc-50 shadow-sm"
+                    : "mr-auto max-w-[85%] rounded-2xl rounded-bl-sm bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200"
                 }
               >
                 <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
               </li>
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <li className="mr-auto rounded-2xl rounded-bl-sm bg-zinc-900 px-4 py-3 text-zinc-400 ring-1 ring-zinc-800">
+              <li className="mr-auto rounded-2xl rounded-bl-sm bg-zinc-100 px-4 py-3 text-zinc-500 ring-1 ring-zinc-200">
                 <span className="dot" /> <span className="dot" /> <span className="dot" />
               </li>
             )}
@@ -54,7 +62,7 @@ export default function Page() {
       </div>
 
       {error && (
-        <div className="mt-3 rounded-md border border-red-900/60 bg-red-950/50 px-3 py-2 text-xs text-red-300">
+        <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           {error.message}
         </div>
       )}
@@ -63,15 +71,15 @@ export default function Page() {
         <input
           value={input}
           onChange={handleInputChange}
-          placeholder="Ask anything about your documents…"
-          className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+          placeholder="Ask about the Tech Collective of Oregon…"
+          className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500"
           autoFocus
         />
         {isLoading ? (
           <button
             type="button"
             onClick={stop}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 text-sm text-zinc-200 hover:bg-zinc-800"
+            className="rounded-xl border border-zinc-300 bg-white px-4 text-sm text-zinc-700 hover:bg-zinc-50"
           >
             Stop
           </button>
@@ -79,7 +87,7 @@ export default function Page() {
           <button
             type="submit"
             disabled={!input.trim()}
-            className="rounded-xl bg-zinc-100 px-4 text-sm font-medium text-zinc-900 disabled:opacity-40"
+            className="rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
           >
             Send
           </button>
@@ -93,10 +101,12 @@ function EmptyState() {
   return (
     <div className="grid h-full place-items-center text-center">
       <div className="space-y-2">
-        <div className="text-base text-zinc-300">Start a conversation</div>
+        <div className="text-base text-zinc-700">
+          Welcome to the Tech Collective of Oregon
+        </div>
         <p className="max-w-sm text-xs text-zinc-500">
-          Ingest documents via <code className="rounded bg-zinc-800 px-1 py-0.5">POST /api/ingest</code>{" "}
-          then ask grounded questions here.
+          Ask anything about the Tech Collective of Oregon — its programs,
+          people, events, and resources.
         </p>
       </div>
     </div>
