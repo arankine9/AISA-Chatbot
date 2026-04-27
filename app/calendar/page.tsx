@@ -65,20 +65,25 @@ export default function CalendarPage() {
     return m;
   }, [events]);
 
-  const fcEvents: EventInput[] = useMemo(
-    () =>
-      (events ?? []).map((ev) => ({
+  const fcEvents: EventInput[] = useMemo(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    return (events ?? []).map((ev) => {
+      const isPast = ev.date < todayStr;
+      const tone = isPast ? "#a1a1aa" : ev.color;
+      return {
         id: ev.id,
         title: ev.title,
         start: ev.date,
         allDay: true,
-        backgroundColor: tint(ev.color, 0.15),
-        borderColor: ev.color,
-        textColor: ev.color,
+        backgroundColor: tint(tone, isPast ? 0.08 : 0.15),
+        borderColor: tone,
+        textColor: tone,
+        classNames: isPast ? ["past-event"] : undefined,
         extendedProps: { full: ev },
-      })),
-    [events]
-  );
+      };
+    });
+  }, [events]);
 
   const onClick = (arg: EventClickArg) => {
     const full = arg.event.extendedProps.full as CalendarEvent | undefined;
