@@ -17,6 +17,39 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
+.fc-tco .fc {
+  --fc-border-color: #e4e4e7;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #fafafa;
+  --fc-today-bg-color: #f4f4f5;
+  --fc-button-bg-color: #18181b;
+  --fc-button-border-color: #18181b;
+  --fc-button-hover-bg-color: #27272a;
+  --fc-button-hover-border-color: #27272a;
+  --fc-button-active-bg-color: #3f3f46;
+  --fc-button-active-border-color: #3f3f46;
+  font-family: inherit;
+}
+.fc-tco .fc-toolbar-title {
+  font-size: 1rem !important;
+  font-weight: 600;
+  color: #18181b;
+}
+.fc-tco .fc-col-header-cell-cushion,
+.fc-tco .fc-daygrid-day-number {
+  color: #52525b;
+  text-decoration: none;
+  font-size: 0.75rem;
+}
+.fc-tco .fc-event {
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 1px 4px;
+}
+.fc-tco .fc-list-event:hover td {
+  background: #f4f4f5;
+}
+
 .dot {
   width: 6px;
   height: 6px;

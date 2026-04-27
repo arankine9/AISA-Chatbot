@@ -2,6 +2,7 @@
 
 import { useChat } from "ai/react";
 import { useEffect, useRef } from "react";
+import { Nav } from "./components/nav";
 
 export default function Page() {
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop } =
@@ -14,23 +15,7 @@ export default function Page() {
 
   return (
     <main className="mx-auto flex h-dvh max-w-3xl flex-col px-4">
-      <header className="flex items-center justify-between py-5">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/TCO.svg"
-            alt="Tech Collective of Oregon"
-            className="h-7 w-auto text-zinc-900"
-          />
-          <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px] shadow-emerald-500/50" />
-            <h1 className="text-sm font-medium tracking-wide text-zinc-700">
-              Tech Collective of Oregon
-            </h1>
-          </div>
-        </div>
-        <span className="hidden text-xs text-zinc-500 sm:inline">AI Assistant</span>
-      </header>
+      <Nav />
 
       <div
         ref={scrollRef}

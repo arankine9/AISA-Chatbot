@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamText, type CoreMessage } from "ai";
 import { buildSystemPrompt, retrieveContext } from "@/lib/rag";
+import { calendarSummaryForPrompt } from "@/lib/calendar";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -19,7 +20,9 @@ export async function POST(req: Request) {
         : "";
 
   const chunks = query ? await retrieveContext(query, 5) : [];
-  const system = buildSystemPrompt(chunks);
+  const ragSystem = buildSystemPrompt(chunks);
+  const calendar = calendarSummaryForPrompt();
+  const system = calendar ? `${ragSystem}\n\n${calendar}` : ragSystem;
 
   const result = streamText({
     model: google("gemini-2.5-flash"),
