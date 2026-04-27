@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   const chunks = query ? await retrieveContext(query, 5) : [];
   const ragSystem = buildSystemPrompt(chunks);
-  const calendar = calendarSummaryForPrompt();
+  const calendar = await calendarSummaryForPrompt();
   const system = calendar ? `${ragSystem}\n\n${calendar}` : ragSystem;
 
   const result = streamText({

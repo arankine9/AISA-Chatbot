@@ -7,6 +7,15 @@ import listPlugin from "@fullcalendar/list";
 import type { EventClickArg, EventInput } from "@fullcalendar/core";
 import { Nav } from "../components/nav";
 
+type Category =
+  | "Tech Team"
+  | "Capital Team"
+  | "Events"
+  | "Non-mandatory"
+  | "General"
+  | "Media Team"
+  | "Exec";
+
 type CalendarEvent = {
   id: string;
   title: string;
@@ -15,13 +24,28 @@ type CalendarEvent = {
   day: string;
   location?: string;
   description: string;
-  category: "day" | "homework";
+  category: Category;
+  color: string;
+  isHomework: boolean;
 };
 
-const CATEGORY_COLORS: Record<CalendarEvent["category"], { bg: string; border: string; text: string }> = {
-  day: { bg: "#dbeafe", border: "#3b82f6", text: "#1e3a8a" },
-  homework: { bg: "#fee2e2", border: "#ef4444", text: "#7f1d1d" },
-};
+const LEGEND: Category[] = [
+  "Tech Team",
+  "Capital Team",
+  "Events",
+  "Media Team",
+  "Exec",
+  "Non-mandatory",
+  "General",
+];
+
+function tint(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
@@ -35,6 +59,12 @@ export default function CalendarPage() {
       .catch((e) => setError(e.message ?? "Failed to load calendar"));
   }, []);
 
+  const colorByCategory = useMemo(() => {
+    const m = new Map<Category, string>();
+    for (const ev of events ?? []) m.set(ev.category, ev.color);
+    return m;
+  }, [events]);
+
   const fcEvents: EventInput[] = useMemo(
     () =>
       (events ?? []).map((ev) => ({
@@ -42,9 +72,9 @@ export default function CalendarPage() {
         title: ev.title,
         start: ev.date,
         allDay: true,
-        backgroundColor: CATEGORY_COLORS[ev.category].bg,
-        borderColor: CATEGORY_COLORS[ev.category].border,
-        textColor: CATEGORY_COLORS[ev.category].text,
+        backgroundColor: tint(ev.color, 0.15),
+        borderColor: ev.color,
+        textColor: ev.color,
         extendedProps: { full: ev },
       })),
     [events]
@@ -59,19 +89,29 @@ export default function CalendarPage() {
     <main className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4 pb-10">
       <Nav />
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">
             Spring 2026 Term Calendar
           </h2>
           <p className="text-xs text-zinc-500">
-            Source: <code className="rounded bg-zinc-100 px-1 py-0.5">data/spring26-calendar.csv</code>
-            {" "}— edit the CSV to update both the calendar and the chatbot.
+            Source:{" "}
+            <code className="rounded bg-zinc-100 px-1 py-0.5">
+              data/spring26-calendar.xlsx
+            </code>{" "}
+            — edit the workbook to update the calendar and chatbot.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-xs text-zinc-600">
-          <Legend swatch={CATEGORY_COLORS.day.border} label="Meeting / Workshop" />
-          <Legend swatch={CATEGORY_COLORS.homework.border} label="Homework & Deadlines" />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-zinc-600">
+          {LEGEND.map((cat) => (
+            <span key={cat} className="inline-flex items-center gap-1.5">
+              <span
+                className="h-3 w-3 rounded-sm"
+                style={{ background: colorByCategory.get(cat) ?? "#a1a1aa" }}
+              />
+              {cat}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -81,7 +121,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm fc-tco">
+      <div className="fc-tco rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
         {events === null && !error ? (
           <div className="grid h-96 place-items-center text-sm text-zinc-500">
             Loading calendar…
@@ -105,7 +145,7 @@ export default function CalendarPage() {
             eventClick={onClick}
             height="auto"
             eventDisplay="block"
-            dayMaxEventRows={4}
+            dayMaxEventRows={5}
             firstDay={1}
           />
         )}
@@ -115,15 +155,6 @@ export default function CalendarPage() {
         <EventModal event={selected} onClose={() => setSelected(null)} />
       )}
     </main>
-  );
-}
-
-function Legend({ swatch, label }: { swatch: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="h-3 w-3 rounded-sm" style={{ background: swatch }} />
-      {label}
-    </span>
   );
 }
 
@@ -145,13 +176,29 @@ function EventModal({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Week {event.week} · {event.day} · {event.date}
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ background: event.color }}
+              />
+              <span>{event.category}</span>
+              <span className="text-zinc-300">·</span>
+              <span>Week {event.week}</span>
+              <span className="text-zinc-300">·</span>
+              <span>
+                {event.day}, {event.date}
+              </span>
+              {event.isHomework && (
+                <>
+                  <span className="text-zinc-300">·</span>
+                  <span>Homework</span>
+                </>
+              )}
             </div>
             <div className="mt-1 text-base font-semibold text-zinc-900">
               {event.title}
             </div>
-            {event.location && (
+            {event.location && !event.isHomework && (
               <div className="mt-0.5 text-xs text-zinc-500">{event.location}</div>
             )}
           </div>

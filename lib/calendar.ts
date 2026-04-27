@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
+import ExcelJS from "exceljs";
 
 const YEAR = 2026;
-const CSV_PATH = path.join(process.cwd(), "data", "spring26-calendar.csv");
+const XLSX_PATH = path.join(process.cwd(), "data", "spring26-calendar.xlsx");
 
 const MONTHS: Record<string, number> = {
   jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
@@ -10,71 +11,69 @@ const MONTHS: Record<string, number> = {
 };
 
 const DAY_COLUMNS = [
-  { idx: 2, name: "Monday", offset: 0, location: "Dream Lab" },
-  { idx: 3, name: "Tuesday", offset: 1, location: "Willow Room" },
-  { idx: 4, name: "Wednesday", offset: 2, location: "Lillis 132 (General Meeting, 6–7pm)" },
-  { idx: 5, name: "Thursday", offset: 3, location: "Dream Lab" },
-  { idx: 6, name: "Friday", offset: 4, location: "Lillis ENTR (Exec only)" },
+  { col: 3, name: "Monday", offset: 0, location: "Dream Lab" },
+  { col: 4, name: "Tuesday", offset: 1, location: "Willow Room" },
+  { col: 5, name: "Wednesday", offset: 2, location: "Lillis 132 (General Meeting, 6–7pm)" },
+  { col: 6, name: "Thursday", offset: 3, location: "Dream Lab" },
+  { col: 7, name: "Friday", offset: 4, location: "Lillis ENTR (Exec only)" },
 ] as const;
 
-const HOMEWORK_COL = 7;
+const HOMEWORK_COL = 8;
+
+export type Category =
+  | "Tech Team"
+  | "Capital Team"
+  | "Events"
+  | "Non-mandatory"
+  | "General"
+  | "Media Team"
+  | "Exec";
+
+export const CATEGORY_COLORS: Record<Category, string> = {
+  "Tech Team": "#4F81BD",
+  "Capital Team": "#9BBB59",
+  "Events": "#F79646",
+  "Non-mandatory": "#808080",
+  "General": "#18181B",
+  "Media Team": "#8064A2",
+  "Exec": "#C0504D",
+};
+
+// ARGB strings as exported by Excel → category in the term legend.
+const ARGB_TO_CATEGORY: Record<string, Category> = {
+  FF4F81BD: "Tech Team",
+  FF538DD5: "Tech Team",
+  FF9BBB59: "Capital Team",
+  FFF79646: "Events",
+  FF808080: "Non-mandatory",
+  FF000000: "General",
+  FF1A1A2E: "General",
+  FF8064A2: "Media Team",
+  FFC0504D: "Exec",
+};
+
+function categoryFromArgb(argb: string | undefined | null): Category {
+  if (!argb) return "General";
+  return ARGB_TO_CATEGORY[argb.toUpperCase()] ?? "General";
+}
 
 export type CalendarEvent = {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
   week: number;
-  day: string; // "Monday"...
+  day: string;
   location?: string;
   description: string;
-  category: "day" | "homework";
+  category: Category;
+  color: string;
+  isHomework: boolean;
 };
 
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        cell += c;
-      }
-    } else {
-      if (c === '"') {
-        inQuotes = true;
-      } else if (c === ",") {
-        row.push(cell);
-        cell = "";
-      } else if (c === "\n" || c === "\r") {
-        if (c === "\r" && text[i + 1] === "\n") i++;
-        row.push(cell);
-        rows.push(row);
-        row = [];
-        cell = "";
-      } else {
-        cell += c;
-      }
-    }
-  }
-  if (cell.length > 0 || row.length > 0) {
-    row.push(cell);
-    rows.push(row);
-  }
-  return rows;
-}
-
-function parseStartDate(rangeText: string): Date | null {
-  // Tolerant of any separator; just grab the first "Mon DD" occurrence.
-  const m = rangeText.match(/([A-Za-z]{3})\s+(\d{1,2})/);
+function parseStartDate(s: unknown): Date | null {
+  if (!s) return null;
+  const text = typeof s === "string" ? s : String(s);
+  const m = text.match(/([A-Za-z]{3})\s+(\d{1,2})/);
   if (!m) return null;
   const month = MONTHS[m[1].toLowerCase()];
   const day = parseInt(m[2], 10);
@@ -95,91 +94,118 @@ function addDays(d: Date, n: number): Date {
   return c;
 }
 
-function cleanCell(s: string | undefined): string {
-  if (!s) return "";
-  return s.replace(/\r/g, "").trim();
-}
+type ColoredChunk = { text: string; category: Category };
 
-function firstLine(s: string): string {
-  const line = s.split("\n").map((l) => l.trim()).find((l) => l.length > 0) ?? "";
-  // Trim leading bullet markers.
-  return line.replace(/^[•\-*?•]\s*/, "").trim();
-}
+// Walk a cell's content and emit chunks of contiguous-same-category text.
+function chunksFromCell(cell: ExcelJS.Cell): ColoredChunk[] {
+  const value = cell.value;
+  if (value == null) return [];
 
-// Excel exports CSVs in Windows-1252. Read raw bytes and translate the
-// punctuation characters that actually show up in this file.
-const WIN1252_FIXUPS: Record<number, string> = {
-  0x82: "‚", 0x83: "ƒ", 0x84: "„", 0x85: "…", 0x86: "†", 0x87: "‡",
-  0x88: "ˆ", 0x89: "‰", 0x8a: "Š", 0x8b: "‹", 0x8c: "Œ", 0x8e: "Ž",
-  0x91: "‘", 0x92: "’", 0x93: "“", 0x94: "”", 0x95: "•", 0x96: "–",
-  0x97: "—", 0x98: "˜", 0x99: "™", 0x9a: "š", 0x9b: "›", 0x9c: "œ",
-  0x9e: "ž", 0x9f: "Ÿ",
-};
+  let runs: { text: string; argb: string | undefined }[];
+  if (typeof value === "object" && "richText" in value) {
+    runs = (value as ExcelJS.CellRichTextValue).richText.map((rt) => ({
+      text: rt.text,
+      argb: rt.font?.color?.argb,
+    }));
+  } else {
+    const text = typeof value === "string" ? value : String(value);
+    if (!text.trim()) return [];
+    runs = [{ text, argb: cell.font?.color?.argb }];
+  }
 
-function readCsv(): string {
-  const buf = fs.readFileSync(CSV_PATH);
-  let out = "";
-  for (let i = 0; i < buf.length; i++) {
-    const b = buf[i];
-    if (b < 0x80) {
-      out += String.fromCharCode(b);
-    } else if (b in WIN1252_FIXUPS) {
-      out += WIN1252_FIXUPS[b];
+  const chunks: ColoredChunk[] = [];
+  let buf = "";
+  let bufCat: Category | null = null;
+
+  const flush = () => {
+    const t = buf.trim();
+    // Skip chunks that are pure decoration (bullets, dashes, whitespace).
+    const meaningful = t.replace(/[•\-*\s]+/g, "");
+    if (t && meaningful && bufCat) chunks.push({ text: t, category: bufCat });
+    buf = "";
+    bufCat = null;
+  };
+
+  for (const run of runs) {
+    const cat = categoryFromArgb(run.argb);
+    if (bufCat === null || cat === bufCat) {
+      buf += run.text;
+      bufCat = cat;
     } else {
-      out += String.fromCharCode(b);
+      flush();
+      buf = run.text;
+      bufCat = cat;
     }
   }
-  return out;
+  flush();
+  return chunks;
 }
 
 let cached: { mtimeMs: number; events: CalendarEvent[] } | null = null;
 
-export function loadEvents(): CalendarEvent[] {
-  const stat = fs.statSync(CSV_PATH);
+export async function loadEvents(): Promise<CalendarEvent[]> {
+  const stat = fs.statSync(XLSX_PATH);
   if (cached && cached.mtimeMs === stat.mtimeMs) return cached.events;
 
-  const rows = parseCsv(readCsv());
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(XLSX_PATH);
+  const ws = wb.worksheets[0];
+
   const events: CalendarEvent[] = [];
 
-  for (const row of rows) {
-    const dateText = cleanCell(row[0]);
-    const start = parseStartDate(dateText);
+  for (let r = 1; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const dateCell = row.getCell(1).value;
+    const start = parseStartDate(dateCell);
     if (!start) continue;
 
-    const weekStr = cleanCell(row[1]);
-    const week = parseInt(weekStr, 10);
+    const weekVal = row.getCell(2).value;
+    const week =
+      typeof weekVal === "number"
+        ? weekVal
+        : typeof weekVal === "string"
+          ? parseInt(weekVal, 10)
+          : NaN;
     if (Number.isNaN(week)) continue;
 
-    for (const col of DAY_COLUMNS) {
-      const content = cleanCell(row[col.idx]);
-      if (!content) continue;
-      const date = addDays(start, col.offset);
-      const title = firstLine(content);
-      events.push({
-        id: `w${week}-${col.name.toLowerCase()}`,
-        title: title || `${col.name} — Week ${week}`,
-        date: fmtDate(date),
-        week,
-        day: col.name,
-        location: col.location,
-        description: content,
-        category: "day",
+    for (const dc of DAY_COLUMNS) {
+      const cell = row.getCell(dc.col);
+      const chunks = chunksFromCell(cell);
+      const date = addDays(start, dc.offset);
+      const dateStr = fmtDate(date);
+      chunks.forEach((chunk, i) => {
+        const title = firstLine(chunk.text);
+        events.push({
+          id: `w${week}-${dc.name.toLowerCase()}-${i}`,
+          title: title || `${dc.name} — ${chunk.category}`,
+          date: dateStr,
+          week,
+          day: dc.name,
+          location: dc.location,
+          description: chunk.text,
+          category: chunk.category,
+          color: CATEGORY_COLORS[chunk.category],
+          isHomework: false,
+        });
       });
     }
 
-    const homework = cleanCell(row[HOMEWORK_COL]);
-    if (homework) {
+    const homeworkChunks = chunksFromCell(row.getCell(HOMEWORK_COL));
+    homeworkChunks.forEach((chunk, i) => {
       const friday = addDays(start, 4);
+      const title = firstLine(chunk.text);
       events.push({
-        id: `w${week}-homework`,
-        title: `Week ${week} — Homework & Deadlines`,
+        id: `w${week}-homework-${i}`,
+        title: title || `Week ${week} — ${chunk.category}`,
         date: fmtDate(friday),
         week,
         day: "Friday",
-        description: homework,
-        category: "homework",
+        description: chunk.text,
+        category: chunk.category,
+        color: CATEGORY_COLORS[chunk.category],
+        isHomework: true,
       });
-    }
+    });
   }
 
   events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
@@ -187,10 +213,18 @@ export function loadEvents(): CalendarEvent[] {
   return events;
 }
 
-export function calendarSummaryForPrompt(): string {
+function firstLine(s: string): string {
+  const line = s
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l.length > 0) ?? "";
+  return line.replace(/^[•\-*?]\s*/, "").trim();
+}
+
+export async function calendarSummaryForPrompt(): Promise<string> {
   let events: CalendarEvent[];
   try {
-    events = loadEvents();
+    events = await loadEvents();
   } catch {
     return "";
   }
@@ -207,15 +241,16 @@ export function calendarSummaryForPrompt(): string {
     const weekEvents = byWeek.get(week)!;
     const lines = weekEvents.map((ev) => {
       const loc = ev.location ? ` @ ${ev.location}` : "";
+      const tag = ev.isHomework ? "Homework" : ev.category;
       const body = ev.description.replace(/\n+/g, " | ");
-      return `- ${ev.date} (${ev.day})${loc}: ${body}`;
+      return `- ${ev.date} (${ev.day}) [${tag}]${loc}: ${body}`;
     });
     blocks.push(`Week ${week}:\n${lines.join("\n")}`);
   }
 
   return [
     "## Tech Collective of Oregon — Spring 2026 Term Calendar",
-    "(Auto-generated from data/spring26-calendar.csv. Use this as the authoritative schedule.)",
+    "(Auto-generated from data/spring26-calendar.xlsx. Categories follow the term legend: Tech Team, Capital Team, Events, Non-mandatory, General, Media Team, Exec.)",
     "",
     blocks.join("\n\n"),
   ].join("\n");
