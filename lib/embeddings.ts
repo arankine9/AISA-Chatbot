@@ -1,7 +1,9 @@
 import { google } from "@ai-sdk/google";
 import { embed, embedMany } from "ai";
 
-const model = google.textEmbeddingModel("text-embedding-004");
+const model = google.textEmbeddingModel("gemini-embedding-001", {
+  outputDimensionality: 768,
+});
 
 export async function embedQuery(text: string): Promise<number[]> {
   const { embedding } = await embed({ model, value: text });
