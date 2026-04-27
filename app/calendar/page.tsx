@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import listPlugin from "@fullcalendar/list";
-import type { EventClickArg, EventInput } from "@fullcalendar/core";
+import type { DatesSetArg, EventClickArg, EventInput } from "@fullcalendar/core";
 import { Nav } from "../components/nav";
 
 type Category =
@@ -51,12 +51,18 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [viewType, setViewType] = useState<string>("dayGridMonth");
 
   useEffect(() => {
     fetch("/api/calendar")
       .then((r) => r.json())
       .then((data) => setEvents(data.events ?? []))
       .catch((e) => setError(e.message ?? "Failed to load calendar"));
+  }, []);
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
 
   const colorByCategory = useMemo(() => {
@@ -66,24 +72,26 @@ export default function CalendarPage() {
   }, [events]);
 
   const fcEvents: EventInput[] = useMemo(() => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    return (events ?? []).map((ev) => {
-      const isPast = ev.date < todayStr;
-      const tone = isPast ? "#a1a1aa" : ev.color;
-      return {
-        id: ev.id,
-        title: ev.title,
-        start: ev.date,
-        allDay: true,
-        backgroundColor: tint(tone, isPast ? 0.08 : 0.15),
-        borderColor: tone,
-        textColor: tone,
-        classNames: isPast ? ["past-event"] : undefined,
-        extendedProps: { full: ev },
-      };
-    });
-  }, [events]);
+    const isList = viewType.startsWith("list");
+    const source = events ?? [];
+    return source
+      .filter((ev) => !(isList && ev.date < todayStr))
+      .map((ev) => {
+        const isPast = ev.date < todayStr;
+        const tone = isPast ? "#a1a1aa" : ev.color;
+        return {
+          id: ev.id,
+          title: ev.title,
+          start: ev.date,
+          allDay: true,
+          backgroundColor: tint(tone, isPast ? 0.08 : 0.15),
+          borderColor: tone,
+          textColor: tone,
+          classNames: isPast ? ["past-event"] : undefined,
+          extendedProps: { full: ev },
+        };
+      });
+  }, [events, viewType, todayStr]);
 
   const onClick = (arg: EventClickArg) => {
     const full = arg.event.extendedProps.full as CalendarEvent | undefined;
@@ -139,15 +147,21 @@ export default function CalendarPage() {
             headerToolbar={{
               left: "prev,next today",
               center: "title",
-              right: "dayGridMonth,listMonth",
+              right: "dayGridMonth,listYear",
             }}
             buttonText={{
               today: "Today",
               month: "Month",
-              list: "Agenda",
+              listYear: "Upcoming",
+            }}
+            views={{
+              listYear: {
+                noEventsContent: "Nothing left on the schedule — see you next term.",
+              },
             }}
             events={fcEvents}
             eventClick={onClick}
+            datesSet={(arg: DatesSetArg) => setViewType(arg.view.type)}
             height="auto"
             eventDisplay="block"
             dayMaxEventRows={5}
