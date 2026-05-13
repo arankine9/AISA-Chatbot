@@ -1,82 +1,67 @@
-# AISA Chatbot
+# Chatbot
 
-A Retrieval Augmented Generation (RAG) chatbot built on Next.js, Vercel Postgres + pgvector, the Vercel AI SDK, and Gemini.
+A RAG chatbot you can deploy in about 3 minutes. Upload documents, ask questions, get answers grounded in your stuff.
 
-- **Generation:** `gemini-2.5-flash`
-- **Embeddings:** `text-embedding-004` (768-dim)
-- **Vector store:** Postgres with `pgvector` (HNSW + cosine)
-- **Streaming UI:** `useChat` from the Vercel AI SDK
+## Deploy
 
-## Project layout
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPO&env=GOOGLE_GENERATIVE_AI_API_KEY&envDescription=Get%20one%20at%20aistudio.google.com&envLink=https%3A%2F%2Faistudio.google.com%2Fapikey)
 
-```
-app/
-  page.tsx                # chat UI (useChat)
-  layout.tsx
-  globals.css
-  api/
-    chat/route.ts         # streaming RAG endpoint
-    ingest/route.ts       # ingest documents (chunk + embed + insert)
-lib/
-  db.ts                   # @vercel/postgres client
-  embeddings.ts           # Gemini embeddings wrapper
-  rag.ts                  # retrieval, chunking, prompt assembly
-db/
-  schema.sql              # pgvector + documents table
-```
+> Replace `YOUR_USERNAME/YOUR_REPO` in the link above with your fork's path after you push this repo to GitHub.
 
-## 1. Environment
+### Steps
 
-Create `.env.local` in the project root:
+1. **Click the Deploy button.** Sign in to Vercel with GitHub. It will fork this repo into your GitHub.
+2. **Paste your Gemini API key** when prompted. Get one at [aistudio.google.com](https://aistudio.google.com/apikey) → "Get API Key" → "Create API Key". Free tier is fine.
+3. **Click Deploy.** Wait ~90 seconds for the first build.
+4. **Add a database.** On your project page, go to **Storage → Create Database → Neon** (free tier). Vercel adds `DATABASE_URL` to your project automatically and redeploys.
+5. **You're live.** Visit your `*.vercel.app` URL. Click "upload docs" to drop in PDFs, text files, or markdown. Then go back and ask the bot about them.
+
+The first time you upload a file, the app creates the `pgvector` extension and the necessary tables. No migrations to run.
+
+## How it works
 
 ```
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key_here
-POSTGRES_URL=your_vercel_postgres_connection_string
+your question → embed → query pgvector → top 5 chunks → Gemini 2.5 Flash → streamed answer
 ```
 
-In Vercel, add the same two variables under **Settings → Environment Variables**.
+- **Generation:** Gemini 2.5 Flash
+- **Embeddings:** Gemini `text-embedding-004` (768 dims)
+- **Vector DB:** Postgres + pgvector on Neon
+- **Streaming:** Vercel AI SDK
+- **Framework:** Next.js 15 (App Router)
 
-## 2. Database
+## Customize
 
-In your Vercel dashboard, create a Postgres database under **Storage**, link it to the project, then run `db/schema.sql` once (Vercel's "Query" tab works). It enables `pgvector`, creates the `documents` table, and adds an HNSW index.
+You have a working chatbot. Now make it yours.
 
-## 3. Install + run
+### Change the system prompt
+`app/api/chat/route.ts` → edit `SYSTEM_PROMPT`. This is where personality, tone, and instructions live. Tell it to be a tutor for your class, a customer support bot for your product, a Dungeon Master, whatever.
+
+### Tune retrieval
+`app/api/chat/route.ts` → change `LIMIT 5` to retrieve more or fewer chunks.
+`lib/chunk.ts` → change `TARGET_SIZE` (default 1000 chars) and `OVERLAP` (default 200 chars).
+
+### Swap the model
+`app/api/chat/route.ts` → `google("gemini-2.5-flash")` → swap for `gemini-2.5-pro` for higher quality, or any other Gemini model.
+
+### Restyle the UI
+`app/page.tsx` and `app/upload/page.tsx`. CSS variables for theming live in `app/globals.css` (`--bg`, `--accent`, etc.).
+
+## Run locally
 
 ```bash
 npm install
+cp .env.example .env.local
+# fill in GOOGLE_GENERATIVE_AI_API_KEY and DATABASE_URL
 npm run dev
 ```
 
-If you skipped Node locally (Path A from the workshop), just push to GitHub — Vercel will install and deploy on every commit.
+For `DATABASE_URL` locally, easiest is to pull it from your Vercel project: `vercel env pull .env.local` after `npm i -g vercel && vercel link`.
 
-## 4. Ingest documents
+## Cost
 
-```bash
-curl -X POST http://localhost:3000/api/ingest \
-  -H 'content-type: application/json' \
-  -d '{
-    "text": "Your long document text goes here...",
-    "metadata": { "source": "my-doc.txt" }
-  }'
-```
+- **Gemini API:** Free tier is plenty for personal use and demos.
+- **Neon on Vercel:** Free tier gets you 0.5 GB storage, which holds a *lot* of embedded text.
+- **Vercel hosting:** Free tier covers personal projects.
 
-The endpoint chunks the input (default ~800 chars with 150 overlap), embeds each chunk, and inserts rows into `documents`. `GET /api/ingest` returns the row count for a quick sanity check.
-
-## 5. Chat
-
-Open the app and ask questions. The chat route embeds the latest user message, retrieves the top 5 chunks via cosine distance, builds a system prompt with that context, and streams Gemini's reply through the AI SDK.
-
-## Deploying to Vercel
-
-1. Push this repo to GitHub.
-2. In Vercel: **New Project → import the repo**.
-3. Attach a Postgres store under **Storage** and link it (this auto-populates `POSTGRES_URL`).
-4. Add `GOOGLE_GENERATIVE_AI_API_KEY` under **Environment Variables**.
-5. Run `db/schema.sql` once against the database.
-6. Deploy.
-
-## Notes
-
-- If you swap embedding models, change `VECTOR(768)` in `db/schema.sql` to match the new dimension.
-- `app/api/chat/route.ts` and `app/api/ingest/route.ts` use the Node.js runtime because `@vercel/postgres` needs it.
-- Tweak chunk size / overlap with `chunkSize` and `chunkOverlap` in the ingest body.
+You can run this thing for $0 indefinitely.
