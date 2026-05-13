@@ -1,10 +1,26 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
-if (!process.env.DATABASE_URL) {
-  console.warn("DATABASE_URL is not set. Add Neon integration in Vercel.");
+let _sql: NeonQueryFunction<false, false> | null = null;
+function getSql(): NeonQueryFunction<false, false> {
+  if (_sql) return _sql;
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set. Add Neon integration in Vercel.");
+  }
+  _sql = neon(process.env.DATABASE_URL);
+  return _sql;
 }
 
-export const sql = neon(process.env.DATABASE_URL!);
+export const sql: NeonQueryFunction<false, false> = new Proxy(
+  function () {} as unknown as NeonQueryFunction<false, false>,
+  {
+    apply(_target, thisArg, args) {
+      return Reflect.apply(getSql() as unknown as Function, thisArg, args);
+    },
+    get(_target, prop, receiver) {
+      return Reflect.get(getSql() as unknown as object, prop, receiver);
+    },
+  }
+);
 
 // Ensure pgvector + tables exist. Cheap to call repeatedly (IF NOT EXISTS).
 let initialized = false;
