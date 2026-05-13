@@ -13,7 +13,7 @@
     "@ai-sdk/react": "^2.0.0",
     "@neondatabase/serverless": "^0.10.0",
     "ai": "^5.0.0",
-    "next": "15.1.0",
+    "next": "15.5.18",
     "pdf-parse": "^1.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
