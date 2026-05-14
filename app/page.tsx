@@ -28,7 +28,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-screen max-w-3xl mx-auto px-4">
       <header className="flex items-center justify-between py-4 border-b border-[var(--border)]">
         <h1 className="text-lg tracking-tight">
-          <span className="text-[var(--accent)]">●</span> chatbot
+          chat
         </h1>
         <Link
           href="/upload"

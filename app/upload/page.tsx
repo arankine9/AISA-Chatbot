@@ -65,7 +65,7 @@ export default function UploadPage() {
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <header className="flex items-center justify-between border-b border-[var(--border)] pb-4">
         <h1 className="text-lg tracking-tight">
-          <span className="text-[var(--accent)]">●</span> upload
+          upload
         </h1>
         <Link
           href="/"
