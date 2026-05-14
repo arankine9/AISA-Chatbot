@@ -1,7 +1,3 @@
-# Chatbot
-
-A RAG chatbot you can deploy in about 3 minutes. Upload documents, ask questions, get answers grounded in your stuff.
-
 ## Deploy
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPO&env=GOOGLE_GENERATIVE_AI_API_KEY&envDescription=Get%20one%20at%20aistudio.google.com&envLink=https%3A%2F%2Faistudio.google.com%2Fapikey)
@@ -11,7 +7,7 @@ A RAG chatbot you can deploy in about 3 minutes. Upload documents, ask questions
 ### Steps
 
 1. **Click the Deploy button.** Sign in to Vercel with GitHub. It will fork this repo into your GitHub.
-2. **Paste your Gemini API key** when prompted. Get one at [aistudio.google.com](https://aistudio.google.com/apikey) → "Get API Key" → "Create API Key". Free tier is fine.
+2. **Paste your Gemini API key** when prompted. Get one at [aistudio.google.com](https://aistudio.google.com/apikey) → "Get API Key" → "Create API Key". Add it to vercel as `GOOGLE_GENERATIVE_AI_API_KEY`
 3. **Click Deploy.** Wait ~90 seconds for the first build.
 4. **Add a database.** On your project page, go to **Storage → Create Database → Neon** (free tier). Vercel adds `DATABASE_URL` to your project automatically and redeploys.
 5. **You're live.** Visit your `*.vercel.app` URL. Click "upload docs" to drop in PDFs, text files, or markdown. Then go back and ask the bot about them.
