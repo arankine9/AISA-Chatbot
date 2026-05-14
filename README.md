@@ -1,8 +1,6 @@
 ## Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2FYOUR_REPO&env=GOOGLE_GENERATIVE_AI_API_KEY&envDescription=Get%20one%20at%20aistudio.google.com&envLink=https%3A%2F%2Faistudio.google.com%2Fapikey)
-
-> Replace `YOUR_USERNAME/YOUR_REPO` in the link above with your fork's path after you push this repo to GitHub.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Farankine9%2FAISA-Chatbot&env=GOOGLE_GENERATIVE_AI_API_KEY&envDescription=Get%20one%20at%20aistudio.google.com&envLink=https%3A%2F%2Faistudio.google.com%2Fapikey)
 
 ### Steps
 
